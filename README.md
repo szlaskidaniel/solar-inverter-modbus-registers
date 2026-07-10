@@ -13,24 +13,24 @@ This repo consolidates that knowledge into one machine-readable file you can dro
 
 ## Supported inverters
 
-| Brand | Model family | Battery data | Alarms | Notes |
-|---|---|---|---|---|
-| Solis | RHI / S6 Hybrid | ✅ | ✅ (80+ codes) | FC 04, unit ID 1 |
-| Solis | S5 / S6 String | — | ✅ | `addressOffset: -1` (see below) |
-| Sofar Solar | HYD ES (legacy 1-phase) | ✅ | — | FC 03 |
-| Sofar Solar | HYD KTL-3PH (3-phase) | ✅ | — | FC 03 |
-| SolaX Power | X1 / X3 Hybrid Gen3/Gen4 | ✅ | — | FC 04 |
-| SolaX Power | X1 Air/Boost/Mini, X3 MIC (string, Gen1) | — | — | FC 04 |
-| Growatt | SPH TL-BH (hybrid, Gen3) | ✅ | — | FC 04, power scale `0.0001` |
-| Growatt | MIN / MIC TL-X (string, Gen1) | — | — | FC 04 |
-| GoodWe | ET / EH / BT / BH (hybrid) | ✅ | — | FC 03, **unit ID 247** |
-| GoodWe | DT / NS / MS / XS (string) | — | — | FC 03, unit ID 247 |
+| Brand       | Model family                             | Battery data | Alarms         | Notes                           |
+| ----------- | ---------------------------------------- | ------------ | -------------- | ------------------------------- |
+| Solis       | RHI / S6 Hybrid                          | ✅           | ✅ (80+ codes) | FC 04, unit ID 1                |
+| Solis       | S5 / S6 String                           | —            | ✅             | `addressOffset: -1` (see below) |
+| Sofar Solar | HYD ES (legacy 1-phase)                  | ✅           | —              | FC 03                           |
+| Sofar Solar | HYD KTL-3PH (3-phase)                    | ✅           | —              | FC 03                           |
+| SolaX Power | X1 / X3 Hybrid Gen3/Gen4                 | ✅           | —              | FC 04                           |
+| SolaX Power | X1 Air/Boost/Mini, X3 MIC (string, Gen1) | —            | —              | FC 04                           |
+| Growatt     | SPH TL-BH (hybrid, Gen3)                 | ✅           | —              | FC 04, power scale `0.0001`     |
+| Growatt     | MIN / MIC TL-X (string, Gen1)            | —            | —              | FC 04                           |
+| GoodWe      | ET / EH / BT / BH (hybrid)               | ✅           | —              | FC 03, **unit ID 247**          |
+| GoodWe      | DT / NS / MS / XS (string)               | —            | —              | FC 03, unit ID 247              |
 
 > Your model missing? [Open an issue](../../issues/new?template=new-inverter.md) or send a PR — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## File format
 
-Everything lives in [`profiles.json`](profiles.json). One *profile* = one inverter family with a consistent register layout:
+Everything lives in [`supported_inverters.json`](supported_inverters.json). One _profile_ = one inverter family with a consistent register layout:
 
 ```jsonc
 {
@@ -38,37 +38,40 @@ Everything lives in [`profiles.json`](profiles.json). One *profile* = one invert
   "brandName": "Solis",
   "modelId": "rhi-s6-hybrid",
   "modelName": "Solis RHI / S6 Hybrid (battery)",
-  "unitId": 1,                       // Modbus unit / slave ID to address
+  "unitId": 1, // Modbus unit / slave ID to address
   "polling": {
-    "maxBlockSize": 70,              // max registers per read request
-    "gapTolerance": 35               // merge reads if gap between addrs ≤ this
+    "maxBlockSize": 70, // max registers per read request
+    "gapTolerance": 35, // merge reads if gap between addrs ≤ this
   },
   "fields": {
     "powerKW": {
-      "fc": 4,                       // Modbus function code (3 = holding, 4 = input)
-      "addr": 33057,                 // register address
-      "count": 2,                    // 1 = 16-bit, 2 = 32-bit (two registers, big-endian)
-      "signed": true,                // two's complement?
-      "scale": 0.001,                // multiply raw value by this
-      "min": -200, "max": 200        // sanity range — discard readings outside it
+      "fc": 4, // Modbus function code (3 = holding, 4 = input)
+      "addr": 33057, // register address
+      "count": 2, // 1 = 16-bit, 2 = 32-bit (two registers, big-endian)
+      "signed": true, // two's complement?
+      "scale": 0.001, // multiply raw value by this
+      "min": -200,
+      "max": 200, // sanity range — discard readings outside it
     },
-    "statusWord": { "presence": "unsupported" }   // field not available on this model
+    "statusWord": { "presence": "unsupported" }, // field not available on this model
   },
-  "alarms": [ /* bit-mapped fault registers, see below */ ]
+  "alarms": [
+    /* bit-mapped fault registers, see below */
+  ],
 }
 ```
 
 ### Field semantics
 
-| Key | Meaning |
-|---|---|
-| `fc` | Modbus function code: `3` = Read Holding Registers, `4` = Read Input Registers |
-| `addr` | Register address as sent on the wire (see `addressOffset` caveat) |
-| `count` | Number of consecutive 16-bit registers. `2` means a 32-bit value, high word first (big-endian) |
-| `signed` | Interpret as two's complement. Critical for power fields where negative = export / discharge |
-| `scale` | Multiplier applied to the raw integer (e.g. raw `4213` × `0.001` = `4.213 kW`) |
+| Key           | Meaning                                                                                                                                                           |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fc`          | Modbus function code: `3` = Read Holding Registers, `4` = Read Input Registers                                                                                    |
+| `addr`        | Register address as sent on the wire (see `addressOffset` caveat)                                                                                                 |
+| `count`       | Number of consecutive 16-bit registers. `2` means a 32-bit value, high word first (big-endian)                                                                    |
+| `signed`      | Interpret as two's complement. Critical for power fields where negative = export / discharge                                                                      |
+| `scale`       | Multiplier applied to the raw integer (e.g. raw `4213` × `0.001` = `4.213 kW`)                                                                                    |
 | `min` / `max` | Plausibility bounds. Dataloggers occasionally return garbage (`0xFFFF`, mid-write reads) — reject values outside this range instead of showing a 6 553.5 kW spike |
-| `presence` | `"unsupported"` = model doesn't expose it; `"computed"` = derive it client-side (e.g. `plantState` from power flows) |
+| `presence`    | `"unsupported"` = model doesn't expose it; `"computed"` = derive it client-side (e.g. `plantState` from power flows)                                              |
 
 ### Common field names
 
@@ -91,11 +94,11 @@ Solis profiles include bit-mapped fault registers. Read `count` consecutive regi
 }]
 ```
 
-This doubles as a plain **Solis error code reference**: `1010 OV-G-V` (grid overvoltage), `1015 NO-Grid`, `1031 INI-FAULT`, `1041 ARC-FAULT`, and so on — see [`profiles.json`](profiles.json) for the full list.
+This doubles as a plain **Solis error code reference**: `1010 OV-G-V` (grid overvoltage), `1015 NO-Grid`, `1031 INI-FAULT`, `1041 ARC-FAULT`, and so on — see [`supported_inverters.json`](supported_inverters.json) for the full list.
 
 ## Gotchas we learned the hard way
 
-- **Off-by-one addressing.** Some vendor docs list *register numbers* (1-based), some list *protocol addresses* (0-based). Solis string docs are 1-based, so that profile carries `addressOffset: -1` — subtract 1 from every `addr` before putting it on the wire. Profiles without the key need no adjustment.
+- **Off-by-one addressing.** Some vendor docs list _register numbers_ (1-based), some list _protocol addresses_ (0-based). Solis string docs are 1-based, so that profile carries `addressOffset: -1` — subtract 1 from every `addr` before putting it on the wire. Profiles without the key need no adjustment.
 - **GoodWe wants unit ID 247**, not 1. Sending unit ID 1 to a GoodWe datalogger gets you silence.
 - **Block reads, politely.** Dataloggers are slow, single-client and easily offended. Batch registers into as few read requests as possible (respect `maxBlockSize` / `gapTolerance`), keep one TCP connection, and don't poll faster than every few seconds.
 - **Scales differ wildly** — Growatt reports power at `0.0001` kW resolution while Solis uses `0.001`. Never assume; always apply the profile's `scale`.
@@ -108,7 +111,7 @@ This doubles as a plain **Solis error code reference**: `1010 OV-G-V` (grid over
 import json
 from pymodbus.client import ModbusTcpClient
 
-profile = next(p for p in json.load(open("profiles.json"))["profiles"]
+profile = next(p for p in json.load(open("supported_inverters.json"))["profiles"]
                if p["modelId"] == "rhi-s6-hybrid")
 
 client = ModbusTcpClient("192.168.1.50", port=502)
@@ -136,4 +139,4 @@ All registers here are **read-only** (FC 03/04). This repo intentionally does no
 
 ---
 
-*Maintained by [Daniel Szlaski](https://danielszlaski.com), author of Glance for PV.*
+_Maintained by [Daniel Szlaski](https://danielszlaski.com), author of Glance for PV._

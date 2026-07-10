@@ -1,6 +1,6 @@
 # Contributing
 
-Adding an inverter = adding one object to the `profiles` array in [`profiles.json`](profiles.json). No code required.
+Adding an inverter = adding one object to the `profiles` array in [`supported_inverters.json`](supported_inverters.json). No code required.
 
 ## Adding a new inverter profile
 
@@ -29,7 +29,7 @@ Hardware-verified > docs-derived > community-sourced. Docs lie surprisingly ofte
 - [ ] `signed` is correct — force an export / battery discharge and confirm the sign
 - [ ] 32-bit fields (`count: 2`) decode high-word-first; a value like `4 294 967.2 kWh` means you got the word order wrong
 - [ ] `scale` verified against a known value, not assumed from a sibling model
-- [ ] JSON is valid: `python3 -m json.tool profiles.json > /dev/null`
+- [ ] JSON is valid: `python3 -m json.tool supported_inverters.json > /dev/null`
 
 ## Fixing an existing profile
 
